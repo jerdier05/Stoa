@@ -8,10 +8,12 @@ import { Bar, Card, Empty, Field, Loading, PageHeader, Segmented } from '../comp
 import Select from '../components/Select'
 import { IconLeft, IconPlus, IconRight, IconTrash } from '../components/icons'
 
+// Al insertar varias filas a la vez, todas deben llevar las mismas columnas:
+// si a una le falta un campo, la API lo envía como null.
 const DEFAULT_CATEGORIES = [
-  { name: 'Gastos fijos', percent: 50 },
-  { name: 'Ocio', percent: 15 },
-  { name: 'Colchón', percent: 15 },
+  { name: 'Gastos fijos', percent: 50, is_investment: false },
+  { name: 'Ocio', percent: 15, is_investment: false },
+  { name: 'Colchón', percent: 15, is_investment: false },
   { name: 'Inversión', percent: 20, is_investment: true },
 ]
 
