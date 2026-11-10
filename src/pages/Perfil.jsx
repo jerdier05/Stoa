@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useUser } from '../lib/user'
+import { reportError } from '../lib/notify'
+import { useFeedback } from '../components/Feedback'
 import WeekGrid from '../components/WeekGrid'
 import { Card, Empty, Loading, Modal, PageHeader, Segmented } from '../components/ui'
 import { IconCheck, IconCopy, IconEye, IconX } from '../components/icons'
@@ -13,6 +15,7 @@ const PRIVACY = [
 
 export default function Perfil() {
   const { user, profile, setProfile } = useUser()
+  const { confirm, toast } = useFeedback()
   const [name, setName] = useState('')
   const [copied, setCopied] = useState(false)
   const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark')
@@ -23,7 +26,9 @@ export default function Perfil() {
 
   async function updateProfile(patch) {
     const { data, error } = await supabase.from('profiles').update(patch).eq('id', user.id).select().single()
-    if (!error) setProfile(data)
+    if (error) return reportError(error)
+    setProfile(data)
+    toast('Guardado')
   }
 
   function changeTheme(t) {
@@ -40,6 +45,7 @@ export default function Perfil() {
     try {
       await navigator.clipboard.writeText(`#${profile.friend_code}`)
       setCopied(true)
+      toast('Código copiado')
       setTimeout(() => setCopied(false), 1500)
     } catch {
       /* sin portapapeles */
@@ -47,9 +53,15 @@ export default function Perfil() {
   }
 
   async function deleteAccount() {
-    if (!window.confirm('Se borrarán tu cuenta y todos tus datos. No se puede deshacer. ¿Continuar?')) return
+    const ok = await confirm({
+      title: '¿Borrar tu cuenta?',
+      message: 'Se borrarán tu cuenta y todos tus datos. No se puede deshacer.',
+      confirmLabel: 'Borrar cuenta',
+      danger: true,
+    })
+    if (!ok) return
     const { error } = await supabase.rpc('delete_my_account')
-    if (error) return window.alert(error.message)
+    if (error) return reportError(error)
     await supabase.auth.signOut()
   }
 
@@ -105,17 +117,19 @@ export default function Perfil() {
 
 function Friends() {
   const { user } = useUser()
+  const { confirm, toast } = useFeedback()
   const [rows, setRows] = useState(null)
   const [code, setCode] = useState('')
   const [msg, setMsg] = useState(null)
   const [viewing, setViewing] = useState(null)
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('friendships')
       .select(
         'id, status, requester, addressee, req:profiles!friendships_requester_fkey(id, username, friend_code), add:profiles!friendships_addressee_fkey(id, username, friend_code)',
       )
+    if (error) reportError(error)
     setRows(data || [])
   }, [])
 
@@ -138,12 +152,24 @@ function Friends() {
   }
 
   const accept = async (id) => {
-    await supabase.from('friendships').update({ status: 'accepted' }).eq('id', id)
+    const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', id)
+    if (error) reportError(error)
+    else toast('Ahora sois amigos')
     load()
   }
   const removeF = async (id) => {
-    await supabase.from('friendships').delete().eq('id', id)
+    const { error } = await supabase.from('friendships').delete().eq('id', id)
+    if (error) reportError(error)
     load()
+  }
+  const askRemove = async (f) => {
+    const ok = await confirm({
+      title: `¿Eliminar a ${other(f)?.username}?`,
+      message: 'Dejaréis de ver vuestras rutinas compartidas.',
+      confirmLabel: 'Eliminar',
+      danger: true,
+    })
+    if (ok) removeF(f.id)
   }
 
   if (!rows) return <Card title="Amigos"><Loading /></Card>
@@ -188,7 +214,7 @@ function Friends() {
               <span className="muted small">#{other(f)?.friend_code}</span>
               <span className="spacer" />
               <button type="button" className="btn btn-ghost sm" onClick={() => setViewing(other(f))}><IconEye size={15} /> Semana</button>
-              <button type="button" className="icon-btn sm" onClick={() => window.confirm('¿Eliminar amigo?') && removeF(f.id)} aria-label="Eliminar amigo"><IconX size={15} /></button>
+              <button type="button" className="icon-btn sm" onClick={() => askRemove(f)} aria-label="Eliminar amigo"><IconX size={15} /></button>
             </li>
           ))}
         </ul>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRows, useSingle } from '../lib/hooks'
 import { useUser } from '../lib/user'
+import { useFeedback } from '../components/Feedback'
 import { projectInvestment } from '../lib/calc'
 import { eur, fromISO, monthName, toISODate, toNumber } from '../lib/utils'
 import { Bar, Card, Empty, Field, Loading, PageHeader, Segmented } from '../components/ui'
@@ -16,6 +17,7 @@ const DEFAULT_CATEGORIES = [
 
 export default function Dinero() {
   const { user } = useUser()
+  const { confirm } = useFeedback()
   const fin = useSingle('finance', user.id)
   const cats = useRows('budget_categories', { match: { user_id: user.id } })
   const exps = useRows('expenses', { match: { user_id: user.id }, order: 'date', ascending: false })
@@ -75,7 +77,15 @@ export default function Dinero() {
                   </div>
                   <span className="num">{eur(budget)}</span>
                   <button type="button" className="icon-btn sm" aria-label={`Borrar ${c.name}`}
-                    onClick={() => window.confirm(`¿Borrar "${c.name}"?`) && cats.remove(c.id)}>
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `¿Borrar "${c.name}"?`,
+                        message: 'Los gastos de esta categoría se quedarán sin categoría.',
+                        confirmLabel: 'Borrar',
+                        danger: true,
+                      })
+                      if (ok) cats.remove(c.id)
+                    }}>
                     <IconTrash size={15} />
                   </button>
                 </div>

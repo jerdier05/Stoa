@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useRows } from '../lib/hooks'
 import { useUser } from '../lib/user'
+import { reportError } from '../lib/notify'
+import { useFeedback } from '../components/Feedback'
 import { DAYS, fmtDuration, fmtTime } from '../lib/utils'
 import WeekGrid from '../components/WeekGrid'
 import Select from '../components/Select'
@@ -10,6 +12,7 @@ import { IconPlus, IconTrash, IconX } from '../components/icons'
 
 export default function Semana() {
   const { user } = useUser()
+  const { confirm, toast } = useFeedback()
   const blocks = useRows('blocks', { match: { user_id: user.id } })
   const items = useRows('routine_items', { match: { user_id: user.id } })
   const [form, setForm] = useState(null) // { day, item? }
@@ -24,12 +27,20 @@ export default function Semana() {
     if (!n) return
     await blocks.add({ name: n })
     setName('')
+    toast(`Bloque "${n}" creado`)
   }
 
   async function deleteBlock(b) {
-    if (!window.confirm(`¿Borrar "${b.name}"? También se quitará de tu semana.`)) return
+    const ok = await confirm({
+      title: `¿Borrar "${b.name}"?`,
+      message: 'También se quitará de todos los días de tu semana.',
+      confirmLabel: 'Borrar',
+      danger: true,
+    })
+    if (!ok) return
     await blocks.remove(b.id)
     items.reload()
+    toast(`"${b.name}" borrado`)
   }
 
   const hours = blocks.rows
@@ -129,8 +140,8 @@ function SlotForm({ day, item, blocks, items, onClose }) {
       if (item) await items.update(item.id, row)
       else await items.add(row)
       onClose()
-    } catch (e2) {
-      setErr(e2.message)
+    } catch {
+      setErr('No se ha podido guardar.')
     }
   }
 
@@ -177,12 +188,15 @@ function CopyDay({ from, userId, items, onClose }) {
   async function run() {
     setBusy(true)
     const source = items.rows.filter((i) => i.day === from)
-    await supabase.from('routine_items').delete().eq('user_id', userId).in('day', targets)
-    await supabase.from('routine_items').insert(
-      targets.flatMap((day) =>
-        source.map((s) => ({ block_id: s.block_id, day, start_min: s.start_min, end_min: s.end_min })),
-      ),
-    )
+    const del = await supabase.from('routine_items').delete().eq('user_id', userId).in('day', targets)
+    const ins = del.error
+      ? del
+      : await supabase.from('routine_items').insert(
+          targets.flatMap((day) =>
+            source.map((s) => ({ block_id: s.block_id, day, start_min: s.start_min, end_min: s.end_min })),
+          ),
+        )
+    if (ins.error) reportError(ins.error)
     await items.reload()
     onClose()
   }

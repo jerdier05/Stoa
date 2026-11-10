@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { UserContext } from '../lib/user'
+import { FeedbackProvider } from './Feedback'
 import { IconFood, IconGym, IconMoney, IconToday, IconUser, IconWeek } from './icons'
 import Hoy from '../pages/Hoy'
 import Semana from '../pages/Semana'
@@ -50,20 +51,22 @@ export default function Shell({ user }) {
 
   return (
     <UserContext.Provider value={{ user, profile, setProfile }}>
-      <div className="app">
-        <nav className="nav" aria-label="Secciones">
-          <a className="brand" href="#hoy">Stoa</a>
-          {TABS.map(({ id, label, Icon }) => (
-            <a key={id} href={`#${id}`} className={tab === id ? 'active' : ''} aria-current={tab === id ? 'page' : undefined}>
-              <Icon />
-              <span>{label}</span>
-            </a>
-          ))}
-        </nav>
-        <main className="main">
-          <Page key={tab} />
-        </main>
-      </div>
+      <FeedbackProvider>
+        <div className="app">
+          <nav className="nav" aria-label="Secciones">
+            <a className="brand" href="#hoy">Stoa</a>
+            {TABS.map(({ id, label, Icon }) => (
+              <a key={id} href={`#${id}`} className={tab === id ? 'active' : ''} aria-current={tab === id ? 'page' : undefined}>
+                <Icon />
+                <span>{label}</span>
+              </a>
+            ))}
+          </nav>
+          <main className="main">
+            <Page key={tab} />
+          </main>
+        </div>
+      </FeedbackProvider>
     </UserContext.Provider>
   )
 }
