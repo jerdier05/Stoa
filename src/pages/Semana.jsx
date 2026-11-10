@@ -4,6 +4,7 @@ import { useRows } from '../lib/hooks'
 import { useUser } from '../lib/user'
 import { DAYS, fmtDuration, fmtTime } from '../lib/utils'
 import WeekGrid from '../components/WeekGrid'
+import Select from '../components/Select'
 import { Bar, Card, Empty, Field, Loading, Modal, PageHeader, TimeSelect } from '../components/ui'
 import { IconPlus, IconTrash, IconX } from '../components/icons'
 
@@ -145,15 +146,11 @@ function SlotForm({ day, item, blocks, items, onClose }) {
       ) : (
         <form onSubmit={save} className="stack">
           <Field label="Bloque">
-            <select className="select" value={blockId} onChange={(e) => setBlockId(e.target.value)}>
-              {blocks.rows.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            <Select value={blockId} onChange={setBlockId} options={blocks.rows.map((b) => ({ value: b.id, label: b.name }))} />
           </Field>
           <div className="two">
-            <Field label="Desde"><TimeSelect value={start} onChange={setStart} /></Field>
-            <Field label="Hasta"><TimeSelect value={end} onChange={setEnd} /></Field>
+            <Field label="Desde"><TimeSelect value={start} onChange={setStart} label="Desde" /></Field>
+            <Field label="Hasta"><TimeSelect value={end} onChange={setEnd} label="Hasta" /></Field>
           </div>
           {end > start && <p className="muted small">Duración: {fmtDuration(end - start)}</p>}
           {err && <p className="error">{err}</p>}

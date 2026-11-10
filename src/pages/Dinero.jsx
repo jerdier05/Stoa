@@ -4,6 +4,7 @@ import { useUser } from '../lib/user'
 import { projectInvestment } from '../lib/calc'
 import { eur, fromISO, monthName, toISODate, toNumber } from '../lib/utils'
 import { Bar, Card, Empty, Field, Loading, PageHeader, Segmented } from '../components/ui'
+import Select from '../components/Select'
 import { IconLeft, IconPlus, IconRight, IconTrash } from '../components/icons'
 
 const DEFAULT_CATEGORIES = [
@@ -182,10 +183,12 @@ function AddExpense({ cats, onAdd }) {
   return (
     <form className="add-expense" onSubmit={submit}>
       <input className="input num" placeholder="Importe" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label="Importe" />
-      <select className="select" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Categoría">
-        <option value="">Sin categoría</option>
-        {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
+      <Select
+        value={cat}
+        onChange={setCat}
+        label="Categoría"
+        options={[{ value: '', label: 'Sin categoría' }, ...cats.map((c) => ({ value: String(c.id), label: c.name }))]}
+      />
       <input className="input" placeholder="Nota (opcional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={60} aria-label="Nota" />
       <button className="btn btn-primary" disabled={!toNumber(amount)} aria-label="Añadir gasto"><IconPlus size={16} /></button>
     </form>

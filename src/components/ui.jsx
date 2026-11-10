@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { IconX } from './icons'
+import Select from './Select'
 import { TIME_OPTIONS, fmtTime } from '../lib/utils'
 
 export function PageHeader({ eyebrow, title, children }) {
@@ -49,16 +50,19 @@ export function Field({ label, children, hint }) {
 export function Modal({ title, onClose, children }) {
   const ref = useRef(null)
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose()
-    ref.current?.addEventListener('keydown', onKey)
-    ref.current?.querySelector('input, select, button')?.focus()
-    const node = ref.current
-    return () => node?.removeEventListener('keydown', onKey)
-  }, [onClose])
+    ref.current?.querySelector('input, button.select-btn, button:not(.icon-btn)')?.focus()
+  }, [])
 
   return (
     <div className="backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={ref}
+        onKeyDown={(e) => e.key === 'Escape' && !e.defaultPrevented && onClose()}
+      >
         <div className="modal-head">
           <h3>{title}</h3>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
@@ -90,16 +94,10 @@ export function Segmented({ options, value, onChange, label, small }) {
   )
 }
 
-export function TimeSelect({ value, onChange, id }) {
-  return (
-    <select id={id} className="select" value={value} onChange={(e) => onChange(Number(e.target.value))}>
-      {TIME_OPTIONS.map((m) => (
-        <option key={m} value={m}>
-          {fmtTime(m)}
-        </option>
-      ))}
-    </select>
-  )
+const TIME_CHOICES = TIME_OPTIONS.map((m) => ({ value: m, label: fmtTime(m) }))
+
+export function TimeSelect({ value, onChange, label }) {
+  return <Select value={value} onChange={(v) => onChange(Number(v))} options={TIME_CHOICES} label={label} />
 }
 
 export function Ring({ value, max, size = 132, stroke = 8, children }) {

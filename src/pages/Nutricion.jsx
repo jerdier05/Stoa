@@ -5,14 +5,15 @@ import { useUser } from '../lib/user'
 import { nutritionTargets } from '../lib/calc'
 import { addDays, fromISO, longDate, toISODate, toNumber } from '../lib/utils'
 import { Bar, Card, Empty, Field, Loading, PageHeader, Ring, Segmented } from '../components/ui'
+import Select from '../components/Select'
 import { IconLeft, IconPlus, IconRight, IconTrash } from '../components/icons'
 
 const ACTIVITY = [
-  { value: '1.2', label: 'Sedentaria' },
-  { value: '1.375', label: 'Ligera · 1–3 días' },
-  { value: '1.55', label: 'Moderada · 3–5 días' },
-  { value: '1.725', label: 'Alta · 6–7 días' },
-  { value: '1.9', label: 'Muy alta' },
+  { value: '1.2', label: 'Sedentaria', hint: 'Poco o nada de ejercicio' },
+  { value: '1.375', label: 'Ligera', hint: '1–3 días' },
+  { value: '1.55', label: 'Moderada', hint: '3–5 días' },
+  { value: '1.725', label: 'Alta', hint: '6–7 días' },
+  { value: '1.9', label: 'Muy alta', hint: 'Doble sesión o trabajo físico' },
 ]
 
 export default function Nutricion() {
@@ -239,9 +240,7 @@ function SettingsForm({ initial, onSave, onCancel }) {
           <Field label="Altura (cm)"><input className="input" inputMode="numeric" value={f.height} onChange={set('height')} /></Field>
         </div>
         <Field label="Actividad">
-          <select className="select" value={f.activity} onChange={set('activity')}>
-            {ACTIVITY.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-          </select>
+          <Select value={f.activity} onChange={(v) => setF({ ...f, activity: v })} options={ACTIVITY} />
         </Field>
         <Field label="Objetivo">
           <Segmented

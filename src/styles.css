@@ -527,6 +527,129 @@ code {
   gap: 4px;
 }
 
+/* Selector propio (sustituye al <select> nativo) */
+.select-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.select-btn:hover {
+  border-color: var(--border-strong);
+}
+
+.select-btn[aria-expanded='true'] {
+  border-color: var(--border-strong);
+  background: var(--bg);
+}
+
+.select-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-value.is-placeholder {
+  color: var(--faint);
+}
+
+.select-hint {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.select-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.select-btn[aria-expanded='true'] .select-chevron {
+  transform: rotate(180deg);
+}
+
+.select-list {
+  position: fixed;
+  z-index: 60;
+  min-width: 160px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  animation: drop 0.14s ease;
+  scrollbar-width: thin;
+  scrollbar-color: var(--track-strong) transparent;
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.select-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-opt[data-active='true'] {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.select-opt[aria-selected='true'] {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.select-opt-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-opt-hint {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.select-opt-check {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
 /* Segmented control */
 .seg {
   display: inline-flex;
