@@ -34,6 +34,16 @@ Supabase Auth (registro, login, recuperar contraseña)
 - La seguridad está en la base de datos: las políticas RLS de `supabase/schema.sql` garantizan que cada usuario solo lee y escribe sus filas. La rutina de otra persona solo se puede leer si `can_view()` lo permite según su privacidad y vuestra amistad.
 - Un trigger crea el perfil al registrarse y genera el código de amigo.
 
+## Seguridad y rendimiento
+
+- **Row Level Security** en todas las tablas: cada usuario solo lee y escribe sus filas; la rutina ajena solo se ve si `can_view()` lo permite.
+- Políticas escritas con `(select auth.uid())`, que Postgres evalúa una vez por consulta en lugar de una vez por fila.
+- **Índices** en todas las claves foráneas y en las consultas por usuario y fecha.
+- **Validación en la base de datos** (longitudes de texto, horas coherentes, importes positivos), no solo en el formulario.
+- Funciones internas (`handle_new_user`) sin permiso de ejecución desde la API.
+- Errores de red o permisos mostrados al usuario con avisos en pantalla.
+- Tarea de GitHub Actions (`.github/workflows/keepalive.yml`) que evita que el proyecto gratuito de Supabase se pause por inactividad.
+
 ## Estructura
 
 ```

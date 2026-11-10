@@ -12,7 +12,7 @@
 -- ------------------------------------------------------------
 create table public.profiles (
   id          uuid primary key references auth.users(id) on delete cascade,
-  username    text not null default 'usuario',
+  username    text not null default 'usuario' check (char_length(username) between 1 and 24),
   friend_code text not null unique default upper(substr(md5(random()::text), 1, 6)),
   privacy     text not null default 'private' check (privacy in ('private', 'friends', 'public')),
   created_at  timestamptz not null default now()
@@ -26,7 +26,7 @@ begin
   insert into public.profiles (id, username)
   values (
     new.id,
-    coalesce(nullif(new.raw_user_meta_data->>'username', ''), split_part(new.email, '@', 1))
+    left(coalesce(nullif(btrim(new.raw_user_meta_data->>'username'), ''), split_part(new.email, '@', 1)), 24)
   );
   return new;
 end;
@@ -181,10 +181,25 @@ create table public.expenses (
   user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
   category_id bigint references public.budget_categories(id) on delete set null,
   amount      numeric(10, 2) not null check (amount > 0),
-  note        text,
+  note        text check (note is null or char_length(note) <= 60),
   date        date not null default current_date,
   created_at  timestamptz not null default now()
 );
+
+
+-- ------------------------------------------------------------
+-- ÍNDICES: aceleran las búsquedas por usuario y las relaciones
+-- ------------------------------------------------------------
+create index blocks_user_id_idx            on public.blocks (user_id);
+create index routine_items_user_day_idx    on public.routine_items (user_id, day);
+create index routine_items_block_id_idx    on public.routine_items (block_id);
+create index workouts_user_day_idx         on public.workouts (user_id, day);
+create index meals_user_date_idx           on public.meals (user_id, date);
+create index budget_categories_user_id_idx on public.budget_categories (user_id);
+create index expenses_user_date_idx        on public.expenses (user_id, date);
+create index expenses_category_id_idx      on public.expenses (category_id);
+create index friendships_requester_idx     on public.friendships (requester);
+create index friendships_addressee_idx     on public.friendships (addressee);
 
 
 -- ============================================================
@@ -205,57 +220,60 @@ alter table public.finance           enable row level security;
 alter table public.budget_categories enable row level security;
 alter table public.expenses          enable row level security;
 
+-- Nota: se escribe (select auth.uid()) en lugar de auth.uid() para que
+-- Postgres lo calcule una sola vez por consulta y no una vez por fila.
+
 -- Perfiles: cualquier usuario con sesión puede buscarlos (para agregar
 -- amigos por código), pero solo tú editas el tuyo.
 create policy "Ver perfiles" on public.profiles
   for select to authenticated using (true);
 create policy "Editar mi perfil" on public.profiles
-  for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+  for update to authenticated using (id = (select auth.uid())) with check (id = (select auth.uid()));
 
 -- Amistades: solo las ves si participas en ellas.
 create policy "Ver mis amistades" on public.friendships
-  for select to authenticated using (auth.uid() in (requester, addressee));
+  for select to authenticated using ((select auth.uid()) in (requester, addressee));
 create policy "Enviar solicitud" on public.friendships
-  for insert to authenticated with check (requester = auth.uid());
+  for insert to authenticated with check (requester = (select auth.uid()));
 create policy "Aceptar solicitud" on public.friendships
-  for update to authenticated using (addressee = auth.uid()) with check (addressee = auth.uid());
+  for update to authenticated using (addressee = (select auth.uid())) with check (addressee = (select auth.uid()));
 create policy "Borrar amistad" on public.friendships
-  for delete to authenticated using (auth.uid() in (requester, addressee));
+  for delete to authenticated using ((select auth.uid()) in (requester, addressee));
 
 -- Rutina: la puedes leer si can_view() lo permite; editar solo la tuya.
 create policy "Ver bloques" on public.blocks
   for select to authenticated using (public.can_view(user_id));
 create policy "Crear bloques" on public.blocks
-  for insert to authenticated with check (user_id = auth.uid());
+  for insert to authenticated with check (user_id = (select auth.uid()));
 create policy "Editar bloques" on public.blocks
-  for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Borrar bloques" on public.blocks
-  for delete to authenticated using (user_id = auth.uid());
+  for delete to authenticated using (user_id = (select auth.uid()));
 
 create policy "Ver rutina" on public.routine_items
   for select to authenticated using (public.can_view(user_id));
 create policy "Crear rutina" on public.routine_items
-  for insert to authenticated with check (user_id = auth.uid());
+  for insert to authenticated with check (user_id = (select auth.uid()));
 create policy "Editar rutina" on public.routine_items
-  for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Borrar rutina" on public.routine_items
-  for delete to authenticated using (user_id = auth.uid());
+  for delete to authenticated using (user_id = (select auth.uid()));
 
 -- Todo lo demás es privado: solo el dueño.
 create policy "Solo dueño" on public.workouts
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Solo dueño" on public.workout_log
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Solo dueño" on public.nutrition
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Solo dueño" on public.meals
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Solo dueño" on public.finance
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Solo dueño" on public.budget_categories
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "Solo dueño" on public.expenses
-  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+  for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
 
 -- ============================================================

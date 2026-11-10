@@ -1,0 +1,33 @@
+# Mantiene despierto el proyecto de Supabase.
+# En el plan gratuito, Supabase pausa los proyectos que pasan unos días sin
+# actividad. Esta tarea hace una consulta mínima cada 3 días para evitarlo.
+#
+# Necesita dos "secrets" en GitHub (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL  → la misma que VITE_SUPABASE_URL
+#   SUPABASE_KEY  → la misma que VITE_SUPABASE_ANON_KEY (clave pública)
+
+name: Mantener Supabase activo
+
+on:
+  schedule:
+    - cron: '17 8 */3 * *' # cada 3 días a las 08:17 UTC
+  workflow_dispatch: # permite lanzarla a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Consulta mínima a la API de Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "Faltan los secrets SUPABASE_URL y SUPABASE_KEY"; exit 1
+          fi
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY")
+          echo "Respuesta de Supabase: $status"
+          test "$status" = "200"
