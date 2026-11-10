@@ -27,7 +27,7 @@ Sigue los pasos en orden. Cada uno termina con una comprobación: no pases al si
 
 **Opción A (si el repositorio ya está en tu GitHub):**
 ```bash
-git clone https://github.com/jerdier/stoa.git
+git clone https://github.com/jerdier05/Stoa.git
 cd stoa
 npm install
 ```
@@ -150,13 +150,13 @@ Si partes del .zip:
    git add .
    git commit -m "Stoa: primera versión"
    git branch -M main
-   git remote add origin https://github.com/jerdier/stoa.git
+   git remote add origin https://github.com/jerdier05/Stoa.git
    git push -u origin main
    ```
 
 > **Conceptos:** un *commit* es una foto del proyecto con un mensaje; *push* la sube a GitHub. Haz commits pequeños y con mensajes claros: en una entrevista revisan tu historial.
 
-✅ Ves el código en github.com/jerdier/stoa (sin `.env` ni `node_modules`).
+✅ Ves el código en github.com/jerdier05/Stoa (sin `.env` ni `node_modules`).
 
 ---
 
