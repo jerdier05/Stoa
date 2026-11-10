@@ -16,6 +16,7 @@ export function friendlyError(error) {
   const msg = String(error?.message || error || '')
   if (/failed to fetch|network|load failed/i.test(msg)) return 'Sin conexión. No se ha podido guardar.'
   if (/jwt|token|not authenticated/i.test(msg)) return 'Tu sesión ha caducado. Vuelve a iniciar sesión.'
+  if (/profiles_username_unique/i.test(msg)) return 'Ese nombre de usuario ya está en uso.'
   if (/duplicate key|already exists/i.test(msg)) return 'Eso ya existe.'
   if (/violates check constraint/i.test(msg)) return 'Algún dato no es válido. Revisa los campos.'
   if (/row-level security/i.test(msg)) return 'No tienes permiso para hacer eso.'

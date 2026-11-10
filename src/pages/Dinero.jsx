@@ -8,6 +8,7 @@ import { Bar, Card, Empty, Field, Loading, PageHeader, Segmented } from '../comp
 import Select from '../components/Select'
 import { IconLeft, IconPlus, IconRight, IconTrash } from '../components/icons'
 
+// Reparto de ejemplo para no empezar vacío.
 // Al insertar varias filas a la vez, todas deben llevar las mismas columnas:
 // si a una le falta un campo, la API lo envía como null.
 const DEFAULT_CATEGORIES = [
@@ -26,11 +27,11 @@ export default function Dinero() {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const seeded = useRef(false)
 
-  // La primera vez creamos un reparto de ejemplo para no empezar vacío.
+  // La primera vez se crea el reparto de ejemplo (solo si no hay ninguna categoría).
   useEffect(() => {
-    if (!cats.loading && cats.rows.length === 0 && !seeded.current) {
+    if (!cats.loading && !cats.error && cats.rows.length === 0 && !seeded.current) {
       seeded.current = true
-      cats.add(DEFAULT_CATEGORIES)
+      cats.add(DEFAULT_CATEGORIES).catch(() => {})
     }
   }, [cats])
 
@@ -39,8 +40,8 @@ export default function Dinero() {
   const f = fin.row || { balance: 0, invested: 0, income: 0, return_rate: 7 }
   const income = Number(f.income)
   const totalPct = cats.rows.reduce((s, c) => s + Number(c.percent), 0)
-  const investCat = cats.rows.find((c) => c.is_investment)
-  const monthlyInvest = investCat ? (income * Number(investCat.percent)) / 100 : 0
+  const investCats = cats.rows.filter((c) => c.is_investment)
+  const monthlyInvest = investCats.reduce((sum, c) => sum + (income * Number(c.percent)) / 100, 0)
 
   const monthKey = toISODate(month).slice(0, 7)
   const monthExps = exps.rows.filter((e) => e.date.startsWith(monthKey))
@@ -60,9 +61,13 @@ export default function Dinero() {
 
       <Card
         title="Reparto del sueldo"
-        action={<span className={`badge ${totalPct === 100 ? '' : 'badge-warn'}`}>{totalPct} %</span>}
+        action={cats.rows.length > 0 && <span className={`badge ${totalPct === 100 ? '' : 'badge-warn'}`}>{totalPct} %</span>}
       >
-        {totalPct !== 100 && <p className="warn small">El reparto suma {totalPct} %. Ajústalo hasta llegar al 100 %.</p>}
+        {cats.rows.length === 0 ? (
+          <Empty>Crea tus categorías (gastos fijos, ocio, ahorro, inversión…) y reparte tu sueldo en porcentajes.</Empty>
+        ) : (
+          totalPct !== 100 && <p className="warn small">El reparto suma {totalPct} %. Ajústalo hasta llegar al 100 %.</p>
+        )}
         <ul className="list">
           {cats.rows.map((c) => {
             const budget = (income * Number(c.percent)) / 100
@@ -101,7 +106,7 @@ export default function Dinero() {
             )
           })}
         </ul>
-        <AddCategory onAdd={(name) => cats.add({ name, percent: 0 })} />
+        <AddCategory onAdd={(name, isInvestment) => cats.add({ name, percent: 0, is_investment: isInvestment })} />
       </Card>
 
       <Card
@@ -170,9 +175,28 @@ function MoneyStat({ label, value, onSave }) {
 
 function AddCategory({ onAdd }) {
   const [name, setName] = useState('')
+  const [investment, setInvestment] = useState(false)
   return (
-    <form className="inline-form top-gap" onSubmit={(e) => { e.preventDefault(); if (name.trim()) { onAdd(name.trim()); setName('') } }}>
+    <form
+      className="inline-form top-gap"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!name.trim()) return
+        onAdd(name.trim(), investment)
+        setName('')
+        setInvestment(false)
+      }}
+    >
       <input className="input" placeholder="Nueva categoría" value={name} onChange={(e) => setName(e.target.value)} maxLength={30} aria-label="Nueva categoría" />
+      <button
+        type="button"
+        className={`chip chip-toggle ${investment ? 'on' : ''}`}
+        aria-pressed={investment}
+        onClick={() => setInvestment((v) => !v)}
+        title="Cuenta para la proyección de inversión"
+      >
+        Inversión
+      </button>
       <button className="btn btn-outline" disabled={!name.trim()}><IconPlus size={16} /> Añadir</button>
     </form>
   )

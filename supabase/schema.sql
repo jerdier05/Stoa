@@ -18,16 +18,30 @@ create table public.profiles (
   created_at  timestamptz not null default now()
 );
 
+-- Nombres de usuario únicos (sin distinguir mayúsculas).
+create unique index profiles_username_unique on public.profiles (lower(username));
+
+-- ¿Está libre un nombre? La app lo consulta antes de registrarse.
+create function public.username_available(name text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select not exists (select 1 from profiles where lower(username) = lower(btrim(name)));
+$$;
+revoke execute on function public.username_available(text) from public;
+grant execute on function public.username_available(text) to anon, authenticated;
+
 -- Trigger: cada vez que alguien se registra, se le crea su perfil
 -- automáticamente con el nombre que eligió en el formulario.
+-- Si el nombre ya está cogido (dos registros a la vez), añade un sufijo
+-- para que el registro nunca falle.
 create function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
+declare
+  wanted text := left(coalesce(nullif(btrim(new.raw_user_meta_data->>'username'), ''), split_part(new.email, '@', 1)), 24);
 begin
-  insert into public.profiles (id, username)
-  values (
-    new.id,
-    left(coalesce(nullif(btrim(new.raw_user_meta_data->>'username'), ''), split_part(new.email, '@', 1)), 24)
-  );
+  if exists (select 1 from profiles where lower(username) = lower(wanted)) then
+    wanted := left(wanted, 19) || '_' || substr(md5(random()::text), 1, 4);
+  end if;
+  insert into public.profiles (id, username) values (new.id, wanted);
   return new;
 end;
 $$;

@@ -29,6 +29,11 @@ export default function Auth() {
     if (mode === 'login') {
       result = await supabase.auth.signInWithPassword({ email, password })
     } else if (mode === 'signup') {
+      const { data: free, error: checkError } = await supabase.rpc('username_available', { name: username.trim() })
+      if (!checkError && free === false) {
+        setBusy(false)
+        return setMsg({ type: 'error', text: 'Ese nombre de usuario ya está en uso.' })
+      }
       result = await supabase.auth.signUp({
         email,
         password,
