@@ -36,6 +36,9 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Solo la usa el trigger: nadie debe poder llamarla desde la API.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 
 -- ------------------------------------------------------------
 -- 2. AMISTADES (se agregan por el código #friend_code)
@@ -70,6 +73,10 @@ language sql stable security definer set search_path = public as $$
     )
   );
 $$;
+
+-- La usan las políticas RLS: solo hace falta para usuarios con sesión.
+revoke execute on function public.can_view(uuid) from public, anon;
+grant execute on function public.can_view(uuid) to authenticated;
 
 
 -- ------------------------------------------------------------
