@@ -106,7 +106,11 @@ export default function Dinero() {
             )
           })}
         </ul>
-        <AddCategory onAdd={(name, isInvestment) => cats.add({ name, percent: 0, is_investment: isInvestment })} />
+        <AddCategory
+          hasInvestment={investCats.length > 0}
+          onAdd={(name) => cats.add({ name, percent: 0, is_investment: false })}
+          onAddInvestment={() => cats.add({ name: 'Inversión', percent: 0, is_investment: true })}
+        />
       </Card>
 
       <Card
@@ -173,31 +177,25 @@ function MoneyStat({ label, value, onSave }) {
   )
 }
 
-function AddCategory({ onAdd }) {
+function AddCategory({ onAdd, onAddInvestment, hasInvestment }) {
   const [name, setName] = useState('')
-  const [investment, setInvestment] = useState(false)
   return (
     <form
       className="inline-form top-gap"
       onSubmit={(e) => {
         e.preventDefault()
         if (!name.trim()) return
-        onAdd(name.trim(), investment)
+        onAdd(name.trim())
         setName('')
-        setInvestment(false)
       }}
     >
       <input className="input" placeholder="Nueva categoría" value={name} onChange={(e) => setName(e.target.value)} maxLength={30} aria-label="Nueva categoría" />
-      <button
-        type="button"
-        className={`chip chip-toggle ${investment ? 'on' : ''}`}
-        aria-pressed={investment}
-        onClick={() => setInvestment((v) => !v)}
-        title="Cuenta para la proyección de inversión"
-      >
-        Inversión
-      </button>
       <button className="btn btn-outline" disabled={!name.trim()}><IconPlus size={16} /> Añadir</button>
+      {!hasInvestment && (
+        <button type="button" className="btn btn-ghost" onClick={onAddInvestment} title="Crea la categoría de inversión que usa la proyección">
+          <IconPlus size={16} /> Inversión
+        </button>
+      )}
     </form>
   )
 }
