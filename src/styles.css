@@ -137,7 +137,6 @@ code {
 
 .main {
   padding: 44px 48px 64px;
-  max-width: 1120px;
   width: 100%;
   display: flex;
   flex-direction: column;
