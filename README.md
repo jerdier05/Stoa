@@ -2,6 +2,8 @@
 
 Planificador personal minimalista: rutina semanal por bloques de actividad, gym con racha, nutrición con objetivos calculados y finanzas con proyección de inversión. Con cuentas de usuario, base de datos real y amigos.
 
+**Demo:** https://stoa-hazel.vercel.app
+
 **Stack:** React 19 · Vite · Supabase (PostgreSQL, Auth, API REST, Row Level Security) · Vercel
 
 ## Funciones
